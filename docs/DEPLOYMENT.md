@@ -42,18 +42,45 @@ Do not run `seed:demo` on a publicly reachable service. Its published sample
 passwords would give anyone staff/admin access. Real staff provisioning and
 password management must be set up separately before a public queue demo.
 
-## GitHub Pages limitations
+## GitHub Pages + Render (split-host mode)
 
-GitHub Pages only hosts static HTML/CSS/JavaScript. It cannot run Docker, Node,
-MongoDB, API routes or persistent sessions. GitHub Free requires the source
-repository to be public to enable Pages. This repository remains private unless
-the owner explicitly approves changing visibility.
+The owner approved making this source repository public. Pages hosts Angular only;
+Render hosts Node and Atlas holds the database. Pages cannot run Docker or APIs.
 
-A split Pages + external backend deployment needs additional authentication and
-CORS design. Simply changing the API URL does not make the current SameSite=Lax
-sessions work across github.io and an unrelated backend domain. Browser third-party
-cookie restrictions can still break SameSite=None solutions. A same-origin full-stack
-host is the recommended route; do not call a static-only page a working full app.
+Set Render environment variables:
+
+- `NODE_ENV=production`
+- `SESSION_TRANSPORT=bearer`
+- `APP_ORIGIN=https://srihari2270-alt.github.io`
+- `TRUST_PROXY=1` (Render's single managed reverse proxy)
+- `MONGO_URI` from Atlas, as a secret, never in source
+
+In GitHub repository Settings > Secrets and variables > Actions > Variables, set
+`QFLOW_API_BASE` to the deployed Render HTTPS origin, with no trailing slash/path.
+Select GitHub Actions as the Pages source. The workflow requires this variable
+before publishing, rather than shipping a page pointing at a nonexistent API.
+
+Split hosting uses random eight-hour bearer sessions in browser `sessionStorage`,
+not cross-site cookies. Refreshing preserves the current tab's login; closing the
+tab ends its stored login. Logout revokes the server session. CORS accepts only the
+configured GitHub Pages origin. Tokens are sent in Authorization headers, never URL
+parameters. As with any JavaScript-accessible token, an XSS flaw could expose the
+session; avoid third-party scripts and do not collect real personal data for this
+educational demo. Default localhost/same-origin mode retains HttpOnly cookies.
+
+For staff/admin, register your own account with a private password in the app.
+Then, from an owner-controlled host shell with MONGO_URI configured, run:
+
+```sh
+node database/set-role.js YOUR_USERNAME admin
+node database/set-role.js STAFF_USERNAME staff
+```
+
+This promotes an existing account without handling its password. Never post the
+password in chat. Production mode rejects the demo seed command. Free Render shell
+availability varies; if unavailable, the role can be changed by the owner through
+Atlas Data Explorer or a private local connection to Atlas. Check the exact username
+before promotion. No public registration route can choose staff/admin access.
 
 ## Free host caveats
 
