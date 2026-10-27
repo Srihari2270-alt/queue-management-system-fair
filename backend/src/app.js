@@ -10,10 +10,26 @@ import {hashPassword,verifyPassword,loginSession,authenticate,staffOnly,adminOnl
 import {branches,services,initialState} from './data.js';
 import {mutate,branch,waiting,estimate,issue,callToken,fail,activity} from './queue.js';
 export const app=express();
+if(config.trustProxy)app.set('trust proxy',1);
 app.disable('x-powered-by');app.use(helmet());app.use(express.json({limit:'32kb'}));
 app.use('/api',rateLimit({windowMs:60000,limit:240,standardHeaders:'draft-8',legacyHeaders:false}));
-// Session cookies are same-origin. Reject cross-site mutations; do not enable wildcard CORS.
-app.use('/api',(req,res,next)=>{if(!['GET','HEAD','OPTIONS'].includes(req.method)){const origin=req.get('origin');if(req.get('sec-fetch-site')==='cross-site'||(origin&&origin!==config.origin&&origin!==req.protocol+'://'+req.get('host')))return res.status(403).json({message:'Origin not allowed.'});}next();});
+// Split hosting uses explicit bearer sessions and an exact allowed frontend origin.
+// Default local/same-origin mode retains HttpOnly cookies and cross-site protection.
+app.use('/api',(req,res,next)=>{
+ const origin=req.get('origin');
+ if(config.sessionTransport==='bearer'&&origin===config.origin){
+  res.set('Access-Control-Allow-Origin',config.origin);res.vary('Origin');
+  res.set('Access-Control-Allow-Headers','Content-Type, Authorization');
+  res.set('Access-Control-Allow-Methods','GET, POST, PATCH, OPTIONS');
+  if(req.method==='OPTIONS')return res.sendStatus(204);
+ }
+ if(!['GET','HEAD','OPTIONS'].includes(req.method)){
+  const allowedSplit=config.sessionTransport==='bearer'&&origin===config.origin;
+  if(!allowedSplit&&(req.get('sec-fetch-site')==='cross-site'||(origin&&origin!==config.origin&&origin!==req.protocol+'://'+req.get('host'))))return res.status(403).json({message:'Origin not allowed.'});
+ }
+ next();
+});
+const sessionResponse=async(res,user)=>{const result=await loginSession(res,user);const {sessionToken,...safe}=result;return sessionToken?{user:safe,sessionToken}:{user:safe};};
 const authLimit=rateLimit({windowMs:15*60000,limit:30,standardHeaders:'draft-8',legacyHeaders:false});
 const username=z.string().trim().toLowerCase().regex(/^[a-z0-9_]{4,20}$/,'Use 4-20 letters, numbers or underscores.');
 const password=z.string().min(8,'Use at least 8 characters.').max(128);
@@ -21,8 +37,8 @@ const name=z.string().trim().min(1).max(60);
 const phone=z.string().trim().regex(/^[0-9 +\-]{7,15}$/,'Enter a valid phone number.');
 const parse=(schema,req)=>schema.parse(req.body);
 app.get('/api/health',async(req,res)=>res.json({ok:true,database:Queue.db.readyState===1?'connected':'disconnected'}));
-app.post('/api/auth/register',authLimit,async(req,res)=>{const data=parse(z.object({username,password,name,phone}),req);const user=await User.create({...data,password:undefined,passwordHash:await hashPassword(data.password),role:'customer'});res.status(201).json({user:await loginSession(res,user)});});
-app.post('/api/auth/login',authLimit,async(req,res)=>{const data=parse(z.object({username,password:z.string().min(1).max(128)}),req);const user=await User.findOne({username:data.username}).select('+passwordHash');if(!user||!await verifyPassword(data.password,user.passwordHash))fail('Invalid username or password.',401);res.json({user:await loginSession(res,user)});});
+app.post('/api/auth/register',authLimit,async(req,res)=>{const data=parse(z.object({username,password,name,phone}),req);const user=await User.create({...data,password:undefined,passwordHash:await hashPassword(data.password),role:'customer'});res.status(201).json(await sessionResponse(res,user));});
+app.post('/api/auth/login',authLimit,async(req,res)=>{const data=parse(z.object({username,password:z.string().min(1).max(128)}),req);const user=await User.findOne({username:data.username}).select('+passwordHash');if(!user||!await verifyPassword(data.password,user.passwordHash))fail('Invalid username or password.',401);res.json(await sessionResponse(res,user));});
 app.post('/api/auth/logout',async(req,res)=>{const t=cookieToken(req);if(t)await Session.deleteOne({digest:digest(t)});res.clearCookie('qflow_session',{path:'/'}).json({ok:true});});
 app.get('/api/auth/me',authenticate,(req,res)=>res.json({user:safeUser(req.user)}));
 app.use('/api',authenticate);
