@@ -4,6 +4,12 @@ A full-stack rebuild of the supplied QFlow HTML prototype. The navy/blue design,
 Chennai branch list and customer/staff workflows are preserved. The browser no
 longer owns the database, password checks or staff permissions.
 
+## Docker alternative
+
+With Docker Desktop running, use `docker compose up --build -d` and open
+http://localhost:8080. Optional local demo logins: `docker compose exec app node database/seed.js`.
+See docs/DEPLOYMENT.md for stopping, persistent data, and internet hosting limits.
+
 ## Start here
 
 Install **Node.js 22.22.3 or newer supported LTS** and npm. The included Angular
@@ -12,7 +18,7 @@ will not work. The project was built and tested with Node 22.23.4.
 
 1. Use GitHub Code > Download ZIP, extract it, and open a terminal **inside the extracted `queue-management-system-fair-main` folder**, next to this README.
 2. Start a MongoDB server, using ONE of these options:
-   - With Docker installed: `docker compose up -d mongo`
+   - With Docker installed, use the complete Docker alternative above (recommended instead of mixing Docker and npm dev).
    - Or install MongoDB Community locally and start its database service.
    - Or use an Atlas **Free** cluster, then put its connection string in the environment file below.
 3. Install dependencies at the project root:
@@ -22,7 +28,7 @@ will not work. The project was built and tested with Node 22.23.4.
 4. Copy `backend/.env.example` to `backend/.env`:
    - Windows Command Prompt: `copy backend\.env.example backend\.env`
    - macOS / Linux: `cp backend/.env.example backend/.env`
-5. The default local Mongo URL already works with the Docker option. If using Atlas,
+5. The default Mongo URL works with a locally installed MongoDB server. If using Atlas,
    change **only `MONGO_URI`** in `backend/.env` to the URI from Atlas. Include the
    `qflow` database in the URI path, use a dedicated database user, percent-encode
    reserved characters in its password, and allow your IP in Atlas Network Access.
@@ -140,8 +146,7 @@ For a real HTTPS deployment, set `NODE_ENV=production` and `APP_ORIGIN` to your
 actual HTTPS origin in `backend/.env`. Secure cookies require HTTPS in production.
 Keep the API and Angular on the same public origin. Configure reverse-proxy TLS,
 trusted proxy behavior and infrastructure limits deliberately before deployment.
-The included Docker Mongo config binds only to localhost and is for local use;
-do not expose its unauthenticated database port to a network.
+The included Docker Mongo config does not expose a host port and is for local use.
 
 ## Tests
 
@@ -161,7 +166,7 @@ counter transitions, callbacks, reports, reset and logout. See `docs/TESTING.md`
 qflow/
   README.md
   package.json + package-lock.json   # one install for both workspaces
-  docker-compose.yml                # optional local MongoDB
+  Dockerfile + docker-compose.yml   # one-command local full-stack run
   database/
     config.js                       # single Mongo connection configuration
     db.js                           # Mongoose models and DB connection
@@ -184,6 +189,7 @@ qflow/
   docs/API.md
   docs/ANALYSIS.md
   docs/TESTING.md
+  docs/DEPLOYMENT.md
   docs/screenshots/
 ```
 
