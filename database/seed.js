@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import {config} from './config.js';
+if(config.production){console.error('Refusing public demo passwords in production. Register a private account and use database/set-role.js instead.');process.exit(1);}
 import {User,connectDb} from './db.js';
 import {hashPassword} from '../backend/src/auth.js';
 import {ensureQueue} from '../backend/src/queue.js';
