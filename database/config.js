@@ -6,6 +6,8 @@ export const config = Object.freeze({
  mongoUri: process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/qflow',
  port: Number(process.env.PORT || 3000),
  production: process.env.NODE_ENV === 'production',
+ sessionTransport: process.env.SESSION_TRANSPORT === 'bearer' ? 'bearer' : 'cookie',
+ trustProxy: process.env.TRUST_PROXY === '1',
  origin: process.env.APP_ORIGIN || 'http://localhost:4200',
  sessionMs: 8*60*60*1000
 });
