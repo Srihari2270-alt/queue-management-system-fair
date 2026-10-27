@@ -1,10 +1,29 @@
 services:
+  app:
+    build: .
+    ports:
+      - "8080:3000"
+    environment:
+      # Local HTTP only. A real internet deployment must use production + HTTPS.
+      NODE_ENV: development
+      PORT: 3000
+      APP_ORIGIN: http://localhost:8080
+      MONGO_URI: mongodb://mongo:27017/qflow
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
   mongo:
     image: mongo:8
-    ports:
-      - "127.0.0.1:27017:27017"
     volumes:
       - qflow_mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
     restart: unless-stopped
+    # No database port is exposed to the host or internet.
 volumes:
   qflow_mongo:
