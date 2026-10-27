@@ -10,7 +10,7 @@ Install **Node.js 22.22.3 or newer supported LTS** and npm. The included Angular
 22 release requires Node 22.22.3+, Node 24.15+ or Node 26+; an older Node 22 version
 will not work. The project was built and tested with Node 22.23.4.
 
-1. Extract the ZIP and open a terminal **inside the `qflow` folder**, next to this README.
+1. Use GitHub Code > Download ZIP, extract it, and open a terminal **inside the extracted `queue-management-system-fair-main` folder**, next to this README.
 2. Start a MongoDB server, using ONE of these options:
    - With Docker installed: `docker compose up -d mongo`
    - Or install MongoDB Community locally and start its database service.
@@ -134,8 +134,7 @@ npm run build
 npm start
 ```
 Open **http://localhost:3000**. Node serves both Angular's compiled files and `/api`.
-There is no need to run `npm run dev` at the same time. The ZIP includes the tested
-compiled frontend under `frontend/dist/qflow/browser`; rebuild after editing it.
+There is no need to run `npm run dev` at the same time. Run npm run build to generate frontend/dist/qflow/browser before using npm start.
 
 For a real HTTPS deployment, set `NODE_ENV=production` and `APP_ORIGIN` to your
 actual HTTPS origin in `backend/.env`. Secure cookies require HTTPS in production.
