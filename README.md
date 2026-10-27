@@ -75,8 +75,7 @@ MONGO_URI=mongodb://127.0.0.1:27017/qflow
 
 MongoDB Community is a local option without a cloud subscription. Atlas offers a
 Free cluster suitable for small development projects; select **Free**, not Flex or
-a paid cluster. You create that account yourself. No cloud account or deployment
-has been created as part of this project.
+a paid cluster. You create that account yourself. Cloud hosting setup is in progress; see docs/DEPLOYMENT.md for the current split-host configuration.
 
 Official setup references:
 - https://www.mongodb.com/docs/manual/administration/install-community/
@@ -114,7 +113,7 @@ focus indicators, form labels, validation and error messages are included.
 ## Password and session safety
 
 MongoDB stores **username + salted scrypt password hash**, never readable passwords.
-The API never returns a password hash. Sessions use random tokens in HttpOnly,
+The API never returns a password hash. Default local sessions use random tokens in HttpOnly,
 SameSite=Lax cookies; only their SHA-256 digests are stored in MongoDB. Sessions
 expire after eight hours, and logout revokes the session. Authorization is checked
 on every API request, not merely hidden behind a frontend button.
@@ -144,7 +143,8 @@ There is no need to run `npm run dev` at the same time. Run npm run build to gen
 
 For a real HTTPS deployment, set `NODE_ENV=production` and `APP_ORIGIN` to your
 actual HTTPS origin in `backend/.env`. Secure cookies require HTTPS in production.
-Keep the API and Angular on the same public origin. Configure reverse-proxy TLS,
+Same-origin hosting keeps cookie authentication. The optional Pages + Render mode
+uses bearer sessions in sessionStorage and exact-origin CORS instead; see docs/DEPLOYMENT.md. Configure reverse-proxy TLS,
 trusted proxy behavior and infrastructure limits deliberately before deployment.
 The included Docker Mongo config does not expose a host port and is for local use.
 
